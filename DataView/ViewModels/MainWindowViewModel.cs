@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using DataView.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DataView.ViewModels
 {
-    public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
+    public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged, IDataProvider
     {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -58,5 +59,12 @@ namespace DataView.ViewModels
                 Progress = 100;
             });
         }
+
+        // IDataProvider 实现
+        public int RowCount => DataSource.GetLength(0);
+        public int ColumnCount => DataSource.GetLength(1);
+        public object GetCell(int row, int col) => DataSource[row, col];
+        public IList<string> GetColumnHeaders() => Columns;
+        public IList<string> GetRowHeaders() => RowHeaders;
     }
 }

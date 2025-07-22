@@ -10,6 +10,15 @@ using System;
 
 namespace DataView.Controls
 {
+    public interface IDataProvider
+    {
+        int RowCount { get; }
+        int ColumnCount { get; }
+        object GetCell(int row, int col);
+        IList<string> GetColumnHeaders();
+        IList<string> GetRowHeaders();
+    }
+
     public class DataView : Control
     {
         public static readonly StyledProperty<IEnumerable> ItemsSourceProperty =
@@ -61,13 +70,21 @@ namespace DataView.Controls
 
         public override void Render(DrawingContext context)
         {
-            var columns = Columns ?? new List<string>();
-            var rowHeaders = RowHeaders ?? new List<string>();
+            IList<string> columns = Columns ?? new List<string>();
+            IList<string> rowHeaders = RowHeaders ?? new List<string>();
             int totalRows = 0;
             int totalCols = columns.Count;
             double[,] array = null;
             double rowHeaderWidth = 80;
-            if (ItemsSource is double[,])
+            IDataProvider provider = ItemsSource as IDataProvider;
+            if (provider != null)
+            {
+                totalRows = provider.RowCount;
+                totalCols = provider.ColumnCount;
+                columns = provider.GetColumnHeaders() ?? columns;
+                rowHeaders = provider.GetRowHeaders() ?? rowHeaders;
+            }
+            else if (ItemsSource is double[,])
             {
                 array = (double[,])ItemsSource;
                 totalRows = array.GetLength(0);
@@ -90,8 +107,7 @@ namespace DataView.Controls
             double hScrollTop = dataAreaHeight;
 
             // 数据区 (0,0)
-            Rect dataArea = new Rect(0, 0, dataAreaWidth, dataAreaHeight);
-            // 绘制表头和数据区（仅在 dataArea 内）
+            Rect dataArea = new Rect(0, 0, viewport.Width - (gridHeight > viewport.Height ? scrollbarThickness : 0), viewport.Height - (gridWidth > viewport.Width ? scrollbarThickness : 0));
             int firstRow = (int)(_verticalOffset / RowHeight);
             int visibleRows = (int)(dataArea.Height / RowHeight) + 2;
             int lastRow = Math.Min(totalRows, firstRow + visibleRows);
@@ -127,7 +143,34 @@ namespace DataView.Controls
                 context.DrawText(formatted, rect.TopLeft + new Point(8, 8));
             }
             // 数据区
-            if (array != null)
+            if (provider != null)
+            {
+                for (int r = firstRow; r < lastRow; r++)
+                {
+                    if (r >= provider.RowCount) break;
+                    var rowRect = new Rect(0, (r - firstRow + 1) * RowHeight, rowHeaderWidth, RowHeight);
+                    if (rowRect.Bottom > dataArea.Bottom) break;
+                    context.FillRectangle(r % 2 == 0 ? Brushes.LightGray : Brushes.Gainsboro, rowRect);
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.TopRight, rowRect.BottomRight);
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.BottomLeft, rowRect.BottomRight);
+                    var rowText = rowHeaders.Count > r ? rowHeaders[r] : $"{r + 1}";
+                    var formattedRow = new FormattedText(rowText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 14, Brushes.Black);
+                    context.DrawText(formattedRow, rowRect.TopLeft + new Point(8, 8));
+                    for (int c = firstCol; c < lastCol; c++)
+                    {
+                        if (c >= provider.ColumnCount) break;
+                        var rect = new Rect(rowHeaderWidth + c * ColumnWidth - _horizontalOffset, (r - firstRow + 1) * RowHeight, ColumnWidth, RowHeight);
+                        if (rect.Right > dataArea.Right) break;
+                        context.FillRectangle(r % 2 == 0 ? Brushes.White : Brushes.Beige, rect);
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
+                        var value = provider.GetCell(r, c)?.ToString() ?? "";
+                        var formatted = new FormattedText(value, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 14, Brushes.Black);
+                        context.DrawText(formatted, rect.TopLeft + new Point(8, 8));
+                    }
+                }
+            }
+            else if (array != null)
             {
                 for (int r = firstRow; r < lastRow; r++)
                 {
