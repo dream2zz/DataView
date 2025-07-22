@@ -8,17 +8,11 @@
         x:Class="DataView.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="DataView">
+        Title="DataView Demo">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-
-    <StackPanel>
-        <TextBlock Text="DataView Demo" FontSize="20" Margin="0,10,0,10" HorizontalAlignment="Center" FontFamily="Microsoft YaHei"/>
-        <local:DataView ItemsSource="{Binding People}" Columns="{Binding Columns}" RowHeight="32" ColumnWidth="120" Height="350"/>
-    </StackPanel>
+    <Grid RowDefinitions="auto,*">
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="8" Margin="10" />
+        <local:DataView ItemsSource="{Binding DataSource}" Columns="{Binding Columns}" RowHeaders="{Binding RowHeaders}" RowHeight="32" ColumnWidth="120"  Grid.Row="1"/>
+    </Grid>
 
 </Window>
