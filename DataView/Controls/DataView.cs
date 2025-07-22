@@ -79,23 +79,32 @@ namespace DataView.Controls
                 totalRows = items.Count;
             }
             var viewport = Bounds;
+            double scrollbarThickness = 16;
             double gridWidth = totalCols * ColumnWidth + rowHeaderWidth;
             double gridHeight = (totalRows + 1) * RowHeight;
 
-            int firstRow = (int)(_verticalOffset / RowHeight);
-            int visibleRows = (int)(viewport.Height / RowHeight) + 2;
-            int lastRow = System.Math.Min(totalRows, firstRow + visibleRows);
-            int firstCol = (int)(_horizontalOffset / ColumnWidth);
-            int visibleCols = (int)((viewport.Width - rowHeaderWidth) / ColumnWidth) + 2;
-            int lastCol = System.Math.Min(totalCols, firstCol + visibleCols);
+            // 网格区域划分
+            double dataAreaWidth = viewport.Width - (gridHeight > viewport.Height ? scrollbarThickness : 0);
+            double dataAreaHeight = viewport.Height - (gridWidth > viewport.Width ? scrollbarThickness : 0);
+            double vScrollLeft = dataAreaWidth;
+            double hScrollTop = dataAreaHeight;
 
-            // 绘制左上角单元格（不显示文字，底色与表头和行头一致）
+            // 数据区 (0,0)
+            Rect dataArea = new Rect(0, 0, dataAreaWidth, dataAreaHeight);
+            // 绘制表头和数据区（仅在 dataArea 内）
+            int firstRow = (int)(_verticalOffset / RowHeight);
+            int visibleRows = (int)(dataArea.Height / RowHeight) + 2;
+            int lastRow = Math.Min(totalRows, firstRow + visibleRows);
+            int firstCol = (int)(_horizontalOffset / ColumnWidth);
+            int visibleCols = (int)((dataArea.Width - rowHeaderWidth) / ColumnWidth) + 2;
+            int lastCol = Math.Min(totalCols, firstCol + visibleCols);
+
+            // 左上角单元格
             var topLeftRect = new Rect(0, 0, rowHeaderWidth, RowHeight);
-            context.FillRectangle(Brushes.LightGray, topLeftRect); // 与表头和偶数行头一致
-            // 只绘制右边框和下边框
-            context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.TopRight, topLeftRect.BottomRight); // 右
-            context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.BottomLeft, topLeftRect.BottomRight); // 下
-            // 绘制表头（跳过左上角）
+            context.FillRectangle(Brushes.LightGray, topLeftRect);
+            context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.TopRight, topLeftRect.BottomRight);
+            context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.BottomLeft, topLeftRect.BottomRight);
+            // 表头
             for (int c = firstCol; c < lastCol; c++)
             {
                 var rect = new Rect(
@@ -103,10 +112,10 @@ namespace DataView.Controls
                     0,
                     ColumnWidth,
                     RowHeight);
+                if (rect.Right > dataArea.Right) break;
                 context.FillRectangle(Brushes.LightGray, rect);
-                // 只绘制右边框和下边框
-                context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight); // 右
-                context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight); // 下
+                context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
+                context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
                 var text = columns.Count > c ? columns[c] : "";
                 var formatted = new FormattedText(
                     text,
@@ -117,23 +126,20 @@ namespace DataView.Controls
                     Brushes.Black);
                 context.DrawText(formatted, rect.TopLeft + new Point(8, 8));
             }
-
-            // 绘制数据行和行头
+            // 数据区
             if (array != null)
             {
                 for (int r = firstRow; r < lastRow; r++)
                 {
                     if (r >= array.GetLength(0)) break;
-                    // 行头
                     var rowRect = new Rect(0, (r - firstRow + 1) * RowHeight, rowHeaderWidth, RowHeight);
+                    if (rowRect.Bottom > dataArea.Bottom) break;
                     context.FillRectangle(r % 2 == 0 ? Brushes.LightGray : Brushes.Gainsboro, rowRect);
-                    // 只绘制右边框和下边框
-                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.TopRight, rowRect.BottomRight); // 右
-                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.BottomLeft, rowRect.BottomRight); // 下
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.TopRight, rowRect.BottomRight);
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.BottomLeft, rowRect.BottomRight);
                     var rowText = rowHeaders.Count > r ? rowHeaders[r] : $"{r + 1}";
                     var formattedRow = new FormattedText(rowText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 14, Brushes.Black);
                     context.DrawText(formattedRow, rowRect.TopLeft + new Point(8, 8));
-                    // 数据区
                     for (int c = firstCol; c < lastCol; c++)
                     {
                         if (c >= array.GetLength(1)) break;
@@ -142,10 +148,10 @@ namespace DataView.Controls
                             (r - firstRow + 1) * RowHeight,
                             ColumnWidth,
                             RowHeight);
+                        if (rect.Right > dataArea.Right) break;
                         context.FillRectangle(r % 2 == 0 ? Brushes.White : Brushes.Beige, rect);
-                        // 只绘制右边框和下边框
-                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight); // 右
-                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight); // 下
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
                         var value = array[r, c].ToString("F4", CultureInfo.InvariantCulture);
                         var formatted = new FormattedText(
                             value,
@@ -165,16 +171,14 @@ namespace DataView.Controls
                 {
                     if (r >= items.Count) break;
                     var item = items[r];
-                    // 行头
                     var rowRect = new Rect(0, (r - firstRow + 1) * RowHeight, rowHeaderWidth, RowHeight);
+                    if (rowRect.Bottom > dataArea.Bottom) break;
                     context.FillRectangle(r % 2 == 0 ? Brushes.LightGray : Brushes.Gainsboro, rowRect);
-                    // 只绘制右边框和下边框
-                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.TopRight, rowRect.BottomRight); // 右
-                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.BottomLeft, rowRect.BottomRight); // 下
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.TopRight, rowRect.BottomRight);
+                    context.DrawLine(new Pen(Brushes.Gray, 0.25), rowRect.BottomLeft, rowRect.BottomRight);
                     var rowText = rowHeaders.Count > r ? rowHeaders[r] : $"{r + 1}";
                     var formattedRow = new FormattedText(rowText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 14, Brushes.Black);
                     context.DrawText(formattedRow, rowRect.TopLeft + new Point(8, 8));
-                    // 数据区
                     for (int c = firstCol; c < lastCol; c++)
                     {
                         var rect = new Rect(
@@ -182,10 +186,10 @@ namespace DataView.Controls
                             (r - firstRow + 1) * RowHeight,
                             ColumnWidth,
                             RowHeight);
+                        if (rect.Right > dataArea.Right) break;
                         context.FillRectangle(r % 2 == 0 ? Brushes.White : Brushes.Beige, rect);
-                        // 只绘制右边框和下边框
-                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight); // 右
-                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight); // 下
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
+                        context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
                         var prop = item.GetType().GetProperty(columns.Count > c ? columns[c] : "");
                         var value = prop?.GetValue(item)?.ToString() ?? "";
                         var formatted = new FormattedText(
@@ -200,44 +204,41 @@ namespace DataView.Controls
                 }
             }
 
-            // 滚动条参数
-            double scrollbarThickness = 16;
-            double scrollbarMargin = 2;
-            // 水平滚动条
-            if (gridWidth > viewport.Width)
-            {
-                double trackWidth = viewport.Width - scrollbarThickness;
-                double thumbWidth = trackWidth * (viewport.Width / gridWidth);
-                thumbWidth = Math.Max(20, thumbWidth); // 最小宽度20
-                double maxOffset = gridWidth - viewport.Width;
-                double thumbLeft = (maxOffset > 0) ? (trackWidth * (_horizontalOffset / maxOffset)) : 0;
-                // 限制thumbLeft不超出track
-                thumbLeft = Math.Min(thumbLeft, trackWidth - thumbWidth);
-                var trackRect = new Rect(0, viewport.Height - scrollbarThickness, trackWidth, scrollbarThickness - scrollbarMargin);
-                var thumbRect = new Rect(thumbLeft, viewport.Height - scrollbarThickness, thumbWidth, scrollbarThickness - scrollbarMargin);
-                context.FillRectangle(Brushes.LightGray, trackRect);
-                context.FillRectangle(Brushes.Gray, thumbRect);
-            }
-            // 垂直滚动条
+            // 纵向滚动条 (0,1)
             if (gridHeight > viewport.Height)
             {
-                double trackHeight = viewport.Height - scrollbarThickness;
-                double thumbHeight = trackHeight * (viewport.Height / gridHeight);
-                thumbHeight = Math.Max(20, thumbHeight); // 最小高度20
-                double maxOffset = gridHeight - viewport.Height;
+                var vScrollRect = new Rect(vScrollLeft, 0, scrollbarThickness, dataAreaHeight);
+                context.FillRectangle(Brushes.LightGray, vScrollRect);
+                // 滚动条 thumb
+                double trackHeight = dataAreaHeight;
+                double thumbHeight = trackHeight * (dataAreaHeight / gridHeight);
+                thumbHeight = Math.Max(20, thumbHeight);
+                double maxOffset = gridHeight - dataAreaHeight;
                 double thumbTop = (maxOffset > 0) ? (trackHeight * (_verticalOffset / maxOffset)) : 0;
-                // 限制thumbTop不超出track
                 thumbTop = Math.Min(thumbTop, trackHeight - thumbHeight);
-                var trackRect = new Rect(viewport.Width - scrollbarThickness, 0, scrollbarThickness - scrollbarMargin, trackHeight);
-                var thumbRect = new Rect(viewport.Width - scrollbarThickness, thumbTop, scrollbarThickness - scrollbarMargin, thumbHeight);
-                context.FillRectangle(Brushes.LightGray, trackRect);
+                var thumbRect = new Rect(vScrollLeft, thumbTop, scrollbarThickness, thumbHeight);
                 context.FillRectangle(Brushes.Gray, thumbRect);
             }
-            // 修正右下角缝隙，填充遮挡区域
+            // 横向滚动条 (1,0)
+            if (gridWidth > viewport.Width)
+            {
+                var hScrollRect = new Rect(0, hScrollTop, dataAreaWidth, scrollbarThickness);
+                context.FillRectangle(Brushes.LightGray, hScrollRect);
+                // 滚动条 thumb
+                double trackWidth = dataAreaWidth;
+                double thumbWidth = trackWidth * (dataAreaWidth / gridWidth);
+                thumbWidth = Math.Max(20, thumbWidth);
+                double maxOffset = gridWidth - dataAreaWidth;
+                double thumbLeft = (maxOffset > 0) ? (trackWidth * (_horizontalOffset / maxOffset)) : 0;
+                thumbLeft = Math.Min(thumbLeft, trackWidth - thumbWidth);
+                var thumbRect = new Rect(thumbLeft, hScrollTop, thumbWidth, scrollbarThickness);
+                context.FillRectangle(Brushes.Gray, thumbRect);
+            }
+            // 右下角填充 (1,1)
             if (gridWidth > viewport.Width && gridHeight > viewport.Height)
             {
-                var cornerRect = new Rect(viewport.Width - scrollbarThickness, viewport.Height - scrollbarThickness, scrollbarThickness, scrollbarThickness);
-                context.FillRectangle(Brushes.White, cornerRect); // 用背景色遮挡
+                var cornerRect = new Rect(vScrollLeft, hScrollTop, scrollbarThickness, scrollbarThickness);
+                context.FillRectangle(Brushes.LightGray, cornerRect);
             }
         }
 
