@@ -1,44 +1,57 @@
-﻿请用 C# 和 Avalonia，从零开始实现一个自定义的 DataGrid 控件。要求：
-- 不使用 Avalonia 自带的 DataGrid 控件。
-- 仅使用 Avalonia.Media.DrawingContext 进行所有绘制操作。
-- 支持基本的数据展示（行、列、单元格）。
-- 不需要行选中和单元格点击事件。
-- 必须支持虚拟化（只渲染可见区域的数据行和单元格）。
-- 结合 Copilot 智能体能力，在性能方面做多种优化，包括：内存占用、渲染效率、滚动流畅性、大数据量下的响应速度。可智能分析和推荐最佳实践，如异步加载、分块渲染、对象池等。
-- 代码需包含控件类定义、绘制逻辑、数据绑定示例，以及如何在 XAML 中使用该控件。
+﻿# DataView
 
-帮我集成到当前项目中，并提供完整的代码示例和使用说明。
+DataView 是一个基于 Avalonia UI 的高性能数据表格控件演示项目，支持大规模数据的可视化展示与滚动。适用于 .NET 9 桌面应用。
 
-# 自定义虚拟化 DataGrid 控件集成说明
+## 功能特性
 
-本项目集成了一个基于 Avalonia 的自定义虚拟化 DataGrid 控件，支持高性能大数据展示。
+- 支持百万级数据的高效渲染与滚动
+- 可自定义列头、行头
+- 支持多种数据源类型：二维数组、数据提供者接口、对象集合
+- 具备横纵滚动条，表头与行头固定
+- 采用 MVVM 架构，易于扩展
 
-## 主要特性
-- 仅使用 Avalonia.Media.DrawingContext 绘制，未用 Avalonia 自带 DataGrid。
-- 支持行、列、单元格展示。
-- 完全虚拟化，只渲染可见区域。
-- 性能优化建议：对象池、异步加载、分块渲染等。
+## 安装与依赖
 
-## 代码结构
-- `Controls/VirtualDataGrid.cs`：自定义控件实现。
-- `ViewModels/MainWindowViewModel.cs`：示例数据与列名。
-- `Views/MainWindow.axaml`：控件 XAML 集成与数据绑定。
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [Avalonia UI](https://avaloniaui.net/)
+- [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/)
 
-## 使用方法
-1. 在 `MainWindowViewModel.cs` 中定义数据集合和列名：
-   ```csharp
-   public ObservableCollection<Person> People { get; }
-   public IList<string> Columns { get; }
-   ```
-2. 在 `MainWindow.axaml` 中添加控件：
-   ```xml
-   <local:VirtualDataGrid ItemsSource="{Binding People}" Columns="{Binding Columns}" RowHeight="32" ColumnWidth="120" Height="350"/>
-   ```
-3. 运行项目，即可体验高性能虚拟化 DataGrid。
+## 运行方式
 
-## 性能优化建议
-- 仅渲染可见区域，减少内存和 CPU 占用。
-- 可扩展对象池缓存、异步加载、分块渲染等高级优化。
-- 支持大数据量流畅滚动。
+```sh
+dotnet build
+dotnet run --project DataView/DataView.csproj
+```
 
-如需进一步扩展功能（如分页、异步数据源等），可在控件基础上继续开发。
+## 主要组件说明
+
+- `DataView.Controls.DataView`：自定义表格控件，支持多种数据源渲染
+- `DataView.ViewModels.MainWindowViewModel`：主窗口视图模型，负责数据初始化与绑定
+- `DataView.ViewModels.BasicDataProvider`：数据提供者接口实现，支持高效数据访问
+- `DataView.ViewModels.Person`：示例数据类型
+- `DataView.Views.MainWindow.axaml`：主窗口界面布局
+
+## 示例
+
+主窗口展示三种数据源：
+
+1. **二维数组**：`DataSource1`，适合大规模数值型数据
+2. **数据提供者接口**：`DataSource2`，通过 `BasicDataProvider` 封装
+3. **对象集合**：`DataSource3`，如 `Person` 类型列表
+
+## 代码片段
+
+```csharp
+// 绑定示例
+<local:DataView ItemsSource="{Binding DataSource1}" Columns="{Binding Columns}" RowHeaders="{Binding RowHeaders}" />
+<local:DataView ItemsSource="{Binding DataSource2}" />
+<local:DataView ItemsSource="{Binding DataSource3}" Columns="{Binding Columns3}" />
+```
+
+## 贡献
+
+欢迎提交 Issue 和 PR，完善功能或修复问题。
+
+## License
+
+MIT
