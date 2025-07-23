@@ -1,6 +1,8 @@
 ﻿# DataView
 
-DataView 是一个基于 Avalonia UI 的高性能数据表格控件演示项目，支持大规模数据的可视化展示与滚动。适用于 .NET 9 桌面应用。
+DataView 是一个基于 Avalonia UI 的高性能数据表格控件演示项目，支持大规模数据的可视化展示与滚动。
+
+适用于 .NET 9 桌面应用。
 
 ## 功能特性
 
@@ -22,14 +24,6 @@ DataView 是一个基于 Avalonia UI 的高性能数据表格控件演示项目�
 dotnet build
 dotnet run --project DataView/DataView.csproj
 ```
-
-## 主要组件说明
-
-- `DataView.Controls.DataView`：自定义表格控件，支持多种数据源渲染
-- `DataView.ViewModels.MainWindowViewModel`：主窗口视图模型，负责数据初始化与绑定
-- `DataView.ViewModels.BasicDataProvider`：数据提供者接口实现，支持高效数据访问
-- `DataView.ViewModels.Person`：示例数据类型
-- `DataView.Views.MainWindow.axaml`：主窗口界面布局
 
 ## 示例
 
