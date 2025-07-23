@@ -162,10 +162,14 @@ namespace DataView.Controls
         public static readonly StyledProperty<int> DecimalPlacesProperty =
             AvaloniaProperty.Register<DataView, int>(nameof(DecimalPlaces), 4);
 
+        /// <summary>
+        /// 属性变更时触发，刷新控件显示。
+        /// </summary>
+        /// <param name="change">属性变更事件参数。</param>
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            InvalidateVisual();
+            InvalidateVisual(); // 属性变更后重绘控件
         }
 
         /// <summary>
@@ -228,21 +232,21 @@ namespace DataView.Controls
             // 数据区矩形 (0,0)
             Rect dataArea = new Rect(0, 0, viewport.Width - (gridHeight > viewport.Height ? scrollbarThickness : 0), viewport.Height - (gridWidth > viewport.Width ? scrollbarThickness : 0));
             // 计算首行、可见行数、末行索引
-            int firstRow = (int)(_verticalOffset / RowHeight);
-            int visibleRows = (int)(dataArea.Height / RowHeight) + 2;
-            int lastRow = Math.Min(totalRows, firstRow + visibleRows);
+            int firstRow = (int)(_verticalOffset / RowHeight); // 当前可见首行索引
+            int visibleRows = (int)(dataArea.Height / RowHeight) + 2; // 可见行数（多加2行用于缓冲）
+            int lastRow = Math.Min(totalRows, firstRow + visibleRows); // 当前可见末行索引
             // 计算首列、可见列数、末列索引
-            int firstCol = (int)(_horizontalOffset / ColumnWidth);
-            int visibleCols = (int)((dataArea.Width - rowHeaderWidth) / ColumnWidth) + 2;
-            int lastCol = Math.Min(totalCols, firstCol + visibleCols);
+            int firstCol = (int)(_horizontalOffset / ColumnWidth); // 当前可见首列索引
+            int visibleCols = (int)((dataArea.Width - rowHeaderWidth) / ColumnWidth) + 2; // 可见列数（多加2列用于缓冲）
+            int lastCol = Math.Min(totalCols, firstCol + visibleCols); // 当前可见末列索引
 
-            // 绘制左上角单元格
+            // 绘制左上角单元格（表头与行头交汇处）
             var topLeftRect = new Rect(0, 0, rowHeaderWidth, RowHeight);
             context.FillRectangle(Brushes.LightGray, topLeftRect);
             context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.TopRight, topLeftRect.BottomRight);
             context.DrawLine(new Pen(Brushes.Gray, 0.25), topLeftRect.BottomLeft, topLeftRect.BottomRight);
 
-            // 绘制表头
+            // 绘制表头（列头）
             for (int c = firstCol; c < lastCol; c++)
             {
                 // 计算当前列表头矩形区域
@@ -268,7 +272,7 @@ namespace DataView.Controls
                 context.DrawText(formatted, rect.TopLeft + new Point(8, 8));
             }
 
-            // 绘制数据区
+            // 绘制数据区（表格主体）
             if (provider != null)
             {
                 // 使用 IDataProvider 渲染数据
@@ -578,7 +582,7 @@ namespace DataView.Controls
                 double thumbMoveRatio = dx / trackWidth;
                 // 更新水平偏移量，限制在有效范围
                 _horizontalOffset = Math.Max(0, Math.Min(maxOffset, _dragStartOffset + thumbMoveRatio * maxOffset));
-                InvalidateVisual();
+                InvalidateVisual(); // 重新绘制控件
                 e.Handled = true;
             }
             // 处理纵向滚动条拖动
@@ -590,7 +594,7 @@ namespace DataView.Controls
                 double thumbMoveRatio = dy / trackHeight;
                 // 更新垂直偏移量，限制在有效范围
                 _verticalOffset = Math.Max(0, Math.Min(maxOffset, _dragStartOffset + thumbMoveRatio * maxOffset));
-                InvalidateVisual();
+                InvalidateVisual(); // 重新绘制控件
                 e.Handled = true;
             }
         }
@@ -603,7 +607,7 @@ namespace DataView.Controls
         {
             // 根据滚轮方向调整垂直偏移量
             _verticalOffset = System.Math.Max(0, _verticalOffset - e.Delta.Y * RowHeight);
-            InvalidateVisual();
+            InvalidateVisual(); // 重新绘制控件
             e.Handled = true;
         }
     }
