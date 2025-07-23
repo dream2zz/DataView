@@ -10,11 +10,12 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="DataView Demo">
 
-    <Grid RowDefinitions="auto,*,*,*">
+    <Grid RowDefinitions="auto,auto,*,*,*">
         <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="8" Margin="10" />
-        <local:DataView ItemsSource="{Binding DataSource1}" Columns="{Binding Columns}" RowHeaders="{Binding RowHeaders}" RowHeight="32" ColumnWidth="120"  Grid.Row="1"/>
-		<local:DataView ItemsSource="{Binding DataSource2}" RowHeight="32" ColumnWidth="120"  Grid.Row="2"/>
-        <local:DataView ItemsSource="{Binding DataSource3}" Columns="{Binding Columns3}" RowHeight="32" ColumnWidth="120" Grid.Row="3"/>
+		<NumericUpDown Minimum="0" Maximum="10" Value="{Binding DecimalPlaces}" Grid.Row="1"/>
+        <local:DataView ItemsSource="{Binding DataSource1}" Columns="{Binding Columns}" RowHeaders="{Binding RowHeaders}" RowHeight="32" ColumnWidth="120" DecimalPlaces="{Binding DecimalPlaces}" Grid.Row="2"/>
+		<local:DataView ItemsSource="{Binding DataSource2}" Margin="0,10,0,10" RowHeight="32" ColumnWidth="120" DecimalPlaces="{Binding DecimalPlaces}" Grid.Row="3"/>
+		<local:DataView ItemsSource="{Binding DataSource3}" Columns="{Binding Columns3}" RowHeight="32" ColumnWidth="120" DecimalPlaces="{Binding DecimalPlaces}" Grid.Row="4"/>
     </Grid>
 
 </Window>

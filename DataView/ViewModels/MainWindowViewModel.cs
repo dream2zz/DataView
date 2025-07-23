@@ -21,6 +21,9 @@ namespace DataView.ViewModels
         public IList<Person> DataSource3 { get; }
         public IList<string> Columns3 { get; }
 
+        [ObservableProperty]
+        private int decimalPlaces = 4;
+
         public MainWindowViewModel()
         {
             int rowCount = int.MaxValue / 10000;

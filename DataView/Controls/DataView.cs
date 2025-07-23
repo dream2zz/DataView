@@ -157,6 +157,30 @@ namespace DataView.Controls
         }
 
         /// <summary>
+        /// 数字类型显示的小数位数属性，默认4位。
+        /// </summary>
+        public static readonly StyledProperty<int> DecimalPlacesProperty =
+            AvaloniaProperty.Register<DataView, int>(nameof(DecimalPlaces), 4);
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == DecimalPlacesProperty)
+            {
+                InvalidateVisual();
+            }
+        }
+
+        /// <summary>
+        /// 获取或设置数字类型显示的小数位数。
+        /// </summary>
+        public int DecimalPlaces
+        {
+            get => GetValue(DecimalPlacesProperty);
+            set => SetValue(DecimalPlacesProperty, value);
+        }
+
+        /// <summary>
         /// 渲染控件内容，包括表格、表头、行头、滚动条等。
         /// </summary>
         /// <param name="context">绘制上下文。</param>
@@ -275,7 +299,14 @@ namespace DataView.Controls
                         context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
                         context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
                         // 获取单元格数据并格式化
-                        var value = provider.GetCell(r, c)?.ToString() ?? "";
+                        var cellObj = provider.GetCell(r, c);
+                        string value;
+                        if (cellObj is double d)
+                            value = d.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
+                        else if (cellObj is float f)
+                            value = f.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
+                        else
+                            value = cellObj?.ToString() ?? "";
                         var formatted = new FormattedText(value, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 14, Brushes.Black);
                         context.DrawText(formatted, rect.TopLeft + new Point(8, 8));
                     }
@@ -307,8 +338,8 @@ namespace DataView.Controls
                         context.FillRectangle(r % 2 == 0 ? Brushes.White : Brushes.Beige, rect);
                         context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.TopRight, rect.BottomRight);
                         context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
-                        // 格式化单元格数值为四位小数
-                        var value = array[r, c].ToString("F4", CultureInfo.InvariantCulture);
+                        // 格式化单元格数值为指定小数位
+                        var value = array[r, c].ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
                         var formatted = new FormattedText(
                             value,
                             CultureInfo.CurrentCulture,
@@ -349,7 +380,14 @@ namespace DataView.Controls
                         context.DrawLine(new Pen(Brushes.Gray, 0.25), rect.BottomLeft, rect.BottomRight);
                         // 通过反射获取属性值
                         var prop = item.GetType().GetProperty(columns.Count > c ? columns[c] : "");
-                        var value = prop?.GetValue(item)?.ToString() ?? "";
+                        var propValue = prop?.GetValue(item);
+                        string value;
+                        if (propValue is double d)
+                            value = d.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
+                        else if (propValue is float f)
+                            value = f.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
+                        else
+                            value = propValue?.ToString() ?? "";
                         var formatted = new FormattedText(
                             value,
                             CultureInfo.CurrentCulture,
