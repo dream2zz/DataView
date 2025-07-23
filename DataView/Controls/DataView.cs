@@ -10,7 +10,7 @@ using System;
 
 namespace DataView.Controls
 {
-    public interface IDataProvider
+    public interface IDataProvider : IEnumerable
     {
         int RowCount { get; }
         int ColumnCount { get; }
@@ -290,18 +290,45 @@ namespace DataView.Controls
             var pt = e.GetPosition(this);
             var viewport = Bounds;
             double scrollbarThickness = 16;
-            double gridWidth = (Columns?.Count ?? 0) * ColumnWidth;
-            double gridHeight = ((ItemsSource is double[,] arr) ? arr.GetLength(0) : 0) * RowHeight + RowHeight;
+            IList<string> columns = Columns ?? new List<string>();
+            IList<string> rowHeaders = RowHeaders ?? new List<string>();
+            int totalRows = 0;
+            int totalCols = columns.Count;
+            double[,] array = null;
+            IDataProvider provider = ItemsSource as IDataProvider;
+            if (provider != null)
+            {
+                totalRows = provider.RowCount;
+                totalCols = provider.ColumnCount;
+            }
+            else if (ItemsSource is double[,])
+            {
+                array = (double[,])ItemsSource;
+                totalRows = array.GetLength(0);
+                totalCols = array.GetLength(1);
+            }
+            else
+            {
+                var items = ItemsSource?.Cast<object>().ToList() ?? new List<object>();
+                totalRows = items.Count;
+            }
+            double rowHeaderWidth = 80;
+            double gridWidth = totalCols * ColumnWidth + rowHeaderWidth;
+            double gridHeight = (totalRows + 1) * RowHeight;
+            double dataAreaWidth = viewport.Width - (gridHeight > viewport.Height ? scrollbarThickness : 0);
+            double dataAreaHeight = viewport.Height - (gridWidth > viewport.Width ? scrollbarThickness : 0);
+            double vScrollLeft = dataAreaWidth;
+            double hScrollTop = dataAreaHeight;
             // 水平滚动条
             if (gridWidth > viewport.Width)
             {
-                double trackWidth = viewport.Width - scrollbarThickness;
-                double thumbWidth = trackWidth * (viewport.Width / gridWidth);
-                thumbWidth = Math.Max(20, thumbWidth); // 最小宽度20
-                double maxOffset = gridWidth - viewport.Width;
+                double trackWidth = dataAreaWidth;
+                double thumbWidth = trackWidth * (dataAreaWidth / gridWidth);
+                thumbWidth = Math.Max(20, thumbWidth);
+                double maxOffset = gridWidth - dataAreaWidth;
                 double thumbLeft = (maxOffset > 0) ? (trackWidth * (_horizontalOffset / maxOffset)) : 0;
                 thumbLeft = Math.Min(thumbLeft, trackWidth - thumbWidth);
-                var thumbRect = new Rect(thumbLeft, viewport.Height - scrollbarThickness, thumbWidth, scrollbarThickness - 2);
+                var thumbRect = new Rect(thumbLeft, hScrollTop, thumbWidth, scrollbarThickness);
                 if (thumbRect.Contains(pt))
                 {
                     _isDraggingHorizontal = true;
@@ -314,13 +341,13 @@ namespace DataView.Controls
             // 垂直滚动条
             if (gridHeight > viewport.Height)
             {
-                double trackHeight = viewport.Height - scrollbarThickness;
-                double thumbHeight = trackHeight * (viewport.Height / gridHeight);
-                thumbHeight = Math.Max(20, thumbHeight); // 最小高度20
-                double maxOffset = gridHeight - viewport.Height;
+                double trackHeight = dataAreaHeight;
+                double thumbHeight = trackHeight * (dataAreaHeight / gridHeight);
+                thumbHeight = Math.Max(20, thumbHeight);
+                double maxOffset = gridHeight - dataAreaHeight;
                 double thumbTop = (maxOffset > 0) ? (trackHeight * (_verticalOffset / maxOffset)) : 0;
                 thumbTop = Math.Min(thumbTop, trackHeight - thumbHeight);
-                var thumbRect = new Rect(viewport.Width - scrollbarThickness, thumbTop, scrollbarThickness - 2, thumbHeight);
+                var thumbRect = new Rect(vScrollLeft, thumbTop, scrollbarThickness, thumbHeight);
                 if (thumbRect.Contains(pt))
                 {
                     _isDraggingVertical = true;
@@ -343,12 +370,36 @@ namespace DataView.Controls
             var pt = e.GetPosition(this);
             var viewport = Bounds;
             double scrollbarThickness = 16;
-            double gridWidth = (Columns?.Count ?? 0) * ColumnWidth;
-            double gridHeight = ((ItemsSource is double[,] arr) ? arr.GetLength(0) : 0) * RowHeight + RowHeight;
+            IList<string> columns = Columns ?? new List<string>();
+            int totalCols = columns.Count;
+            int totalRows = 0;
+            double[,] array = null;
+            IDataProvider provider = ItemsSource as IDataProvider;
+            if (provider != null)
+            {
+                totalRows = provider.RowCount;
+                totalCols = provider.ColumnCount;
+            }
+            else if (ItemsSource is double[,])
+            {
+                array = (double[,])ItemsSource;
+                totalRows = array.GetLength(0);
+                totalCols = array.GetLength(1);
+            }
+            else
+            {
+                var items = ItemsSource?.Cast<object>().ToList() ?? new List<object>();
+                totalRows = items.Count;
+            }
+            double rowHeaderWidth = 80;
+            double gridWidth = totalCols * ColumnWidth + rowHeaderWidth;
+            double gridHeight = (totalRows + 1) * RowHeight;
+            double dataAreaWidth = viewport.Width - (gridHeight > viewport.Height ? scrollbarThickness : 0);
+            double dataAreaHeight = viewport.Height - (gridWidth > viewport.Width ? scrollbarThickness : 0);
             if (_isDraggingHorizontal && gridWidth > viewport.Width)
             {
-                double trackWidth = viewport.Width - scrollbarThickness;
-                double maxOffset = gridWidth - viewport.Width;
+                double trackWidth = dataAreaWidth;
+                double maxOffset = gridWidth - dataAreaWidth;
                 double dx = pt.X - _dragStartPoint.X;
                 double thumbMoveRatio = dx / trackWidth;
                 _horizontalOffset = Math.Max(0, Math.Min(maxOffset, _dragStartOffset + thumbMoveRatio * maxOffset));
@@ -357,8 +408,8 @@ namespace DataView.Controls
             }
             if (_isDraggingVertical && gridHeight > viewport.Height)
             {
-                double trackHeight = viewport.Height - scrollbarThickness;
-                double maxOffset = gridHeight - viewport.Height;
+                double trackHeight = dataAreaHeight;
+                double maxOffset = gridHeight - dataAreaHeight;
                 double dy = pt.Y - _dragStartPoint.Y;
                 double thumbMoveRatio = dy / trackHeight;
                 _verticalOffset = Math.Max(0, Math.Min(maxOffset, _dragStartOffset + thumbMoveRatio * maxOffset));

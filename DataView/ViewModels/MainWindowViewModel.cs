@@ -1,32 +1,23 @@
 ﻿using Avalonia.Controls;
 using DataView.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Threading;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace DataView.ViewModels
 {
-    public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged, IDataProvider
+    public partial class MainWindowViewModel : ViewModelBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        // 10000行，100列的数据源，值为-199~199的随机数，保留4位小数
         public double[,] DataSource { get; private set; }
         public IList<string> Columns { get; }
         public IList<string> RowHeaders { get; }
 
-        private int _progress;
-        public int Progress
-        {
-            get => _progress;
-            set { _progress = value; OnPropertyChanged(); }
-        }
+        [ObservableProperty]
+        private int progress;
+
+        public IDataProvider DataSource2 { get; private set; }
 
         public MainWindowViewModel()
         {
@@ -35,36 +26,31 @@ namespace DataView.ViewModels
             DataSource = new double[rowCount, colCount];
             Columns = new List<string>(colCount);
             RowHeaders = new List<string>(rowCount);
-            var rand = new Random();
             for (int c = 0; c < colCount; c++)
             {
                 Columns.Add($"Col {c + 1}");
             }
+            DataSource2 = new BasicDataProvider(DataSource, Columns, RowHeaders);
             Task.Run(async () =>
             {
+                var rand = new Random();
                 for (int r = 0; r < rowCount; r++)
                 {
                     RowHeaders.Add($"{r + 1}");
                     for (int c = 0; c < colCount; c++)
                     {
-                        double val = rand.NextDouble() * 398 - 199; // [-199, 199]
+                        double val = rand.NextDouble() * 398 - 199;
                         DataSource[r, c] = Math.Round(val, 4);
                     }
                     if (r % 100 == 0)
                     {
-                        Progress = (int)((r + 1) * 100.0 / rowCount);
+                        var value = (int)((r + 1) * 100.0 / rowCount);
+                        await Dispatcher.UIThread.InvokeAsync(() => Progress = value);
                         await Task.Yield();
                     }
                 }
-                Progress = 100;
+                await Dispatcher.UIThread.InvokeAsync(() => Progress = 100);
             });
         }
-
-        // IDataProvider 实现
-        public int RowCount => DataSource.GetLength(0);
-        public int ColumnCount => DataSource.GetLength(1);
-        public object GetCell(int row, int col) => DataSource[row, col];
-        public IList<string> GetColumnHeaders() => Columns;
-        public IList<string> GetRowHeaders() => RowHeaders;
     }
 }
