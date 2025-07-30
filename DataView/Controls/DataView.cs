@@ -423,11 +423,11 @@ namespace DataView.Controls
                 context.FillRectangle(Brushes.LightGray, hScrollRect);
                 // 计算横向滚动条 thumb 区域
                 double trackWidth = dataAreaWidth;
-                double thumbWidth = trackWidth * (dataAreaWidth / gridWidth);
-                thumbWidth = Math.Max(20, thumbWidth);
+                double thumbWidth = 80; // 固定宽度
                 double maxOffset = gridWidth - dataAreaWidth;
-                double thumbLeft = (maxOffset > 0) ? (trackWidth * (_horizontalOffset / maxOffset)) : 0;
-                thumbLeft = Math.Min(thumbLeft, trackWidth - thumbWidth);
+                double thumbMoveRange = trackWidth - thumbWidth;
+                double thumbLeft = (maxOffset > 0) ? (thumbMoveRange * (_horizontalOffset / maxOffset)) : 0;
+                thumbLeft = Math.Min(thumbLeft, thumbMoveRange);
                 var thumbRect = new Rect(thumbLeft, hScrollTop, thumbWidth, scrollbarThickness);
                 context.FillRectangle(Brushes.Gray, thumbRect);
             }
@@ -485,11 +485,11 @@ namespace DataView.Controls
             if (gridWidth > viewport.Width)
             {
                 double trackWidth = dataAreaWidth;
-                double thumbWidth = trackWidth * (dataAreaWidth / gridWidth);
-                thumbWidth = Math.Max(20, thumbWidth);
+                double thumbWidth = 80; // 固定宽度
                 double maxOffset = gridWidth - dataAreaWidth;
-                double thumbLeft = (maxOffset > 0) ? (trackWidth * (_horizontalOffset / maxOffset)) : 0;
-                thumbLeft = Math.Min(thumbLeft, trackWidth - thumbWidth);
+                double thumbMoveRange = trackWidth - thumbWidth;
+                double thumbLeft = (maxOffset > 0) ? (thumbMoveRange * (_horizontalOffset / maxOffset)) : 0;
+                thumbLeft = Math.Min(thumbLeft, thumbMoveRange);
                 var thumbRect = new Rect(thumbLeft, hScrollTop, thumbWidth, scrollbarThickness);
                 if (thumbRect.Contains(pt))
                 {
@@ -577,11 +577,16 @@ namespace DataView.Controls
             if (_isDraggingHorizontal && gridWidth > viewport.Width)
             {
                 double trackWidth = dataAreaWidth;
+                double thumbWidth = 80; // 固定宽度
                 double maxOffset = gridWidth - dataAreaWidth;
+                double thumbMoveRange = trackWidth - thumbWidth;
                 double dx = pt.X - _dragStartPoint.X;
-                double thumbMoveRatio = dx / trackWidth;
-                // 更新水平偏移量，限制在有效范围
-                _horizontalOffset = Math.Max(0, Math.Min(maxOffset, _dragStartOffset + thumbMoveRatio * maxOffset));
+                double newThumbLeft = (maxOffset > 0) ? (thumbMoveRange * (_dragStartOffset / maxOffset)) : 0;
+                newThumbLeft = Math.Min(newThumbLeft + dx, thumbMoveRange);
+                newThumbLeft = Math.Max(0, newThumbLeft);
+                // 反推_horizontalOffset
+                _horizontalOffset = (thumbMoveRange > 0) ? (newThumbLeft / thumbMoveRange) * maxOffset : 0;
+                _horizontalOffset = Math.Max(0, Math.Min(maxOffset, _horizontalOffset));
                 InvalidateVisual(); // 重新绘制控件
                 e.Handled = true;
             }
